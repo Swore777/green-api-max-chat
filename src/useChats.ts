@@ -126,14 +126,14 @@ export function useChats(creds: Credentials) {
     const phone = normalizePhone(phoneInput);
     if (!phone) throw new Error('Введите номер в международном формате, например +7 999 123-45-67');
 
-    // В MAX ответы приходят от числового id пользователя, а не от номера.
+    // В MAX и Telegram ответы приходят от числового id пользователя, а не от номера.
     // Без checkAccount ответ собеседника попал бы в отдельный чат.
     // Инстанс WhatsApp метода не знает — тогда пишем по номеру, это его родной chatId.
     let chatId = `${phone}@c.us`;
     try {
       const r = await checkAccount(credsRef.current, phone);
       if (typeof r?.exist === 'boolean') {
-        if (!r.exist) throw new Error('На этом номере нет аккаунта MAX');
+        if (!r.exist) throw new Error('На этом номере нет аккаунта в мессенджере (или номер скрыт настройками приватности)');
         chatId = r.chatId;
       }
     } catch (e) {
