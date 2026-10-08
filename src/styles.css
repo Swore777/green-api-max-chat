@@ -176,15 +176,8 @@ textarea:focus {
 
 .login-logo {
   align-self: center;
-  width: 56px;
-  height: 56px;
-  border-radius: 18px;
-  display: grid;
-  place-items: center;
-  background: var(--bubble-out);
-  color: #fff;
-  font-size: 28px;
-  font-weight: 800;
+  width: 180px;
+  height: auto;
 }
 
 /* ---------- мессенджер ---------- */

@@ -49,9 +49,7 @@ export function Login({ onLogin }: Props) {
   return (
     <div className="login">
       <form className="login-card" onSubmit={submit}>
-        <div className="login-logo" aria-hidden>
-          M
-        </div>
+        <img className="login-logo" src={`${import.meta.env.BASE_URL}green-api-logo.svg`} alt="GREEN-API" />
         <h1>Вход в MAX Chat</h1>
         <p className="muted">Учётные данные инстанса из личного кабинета GREEN-API</p>
 
