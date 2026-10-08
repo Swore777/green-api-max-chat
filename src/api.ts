@@ -21,12 +21,33 @@ function methodUrl(c: Credentials, method: string, suffix = ''): string {
   return `${base}/waInstance${c.idInstance}/${method}/${c.apiTokenInstance}${suffix}`;
 }
 
+// На бесплатном тарифе «Разработчик» переписка возможна только с 3 чатами в месяц.
+// Сверх квоты любой метод отвечает 466 со списком разрешённых чатов —
+// сообщаем об этом интерфейсу, откуда бы ни пришла ошибка.
+const QUOTA_STATUS = 466;
+type QuotaListener = (allowedChats: string[]) => void;
+const quotaListeners = new Set<QuotaListener>();
+
+export function onQuotaExceeded(fn: QuotaListener): () => void {
+  quotaListeners.add(fn);
+  return () => quotaListeners.delete(fn);
+}
+
+export function reportQuotaExceeded(text: string) {
+  const allowed = [...new Set(text.match(/[\w.-]+@(?:c\.us|g\.us|lid)/g) ?? [])];
+  for (const fn of quotaListeners) fn(allowed);
+}
+
 async function call<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
     ...init,
     headers: init?.body ? { 'Content-Type': 'application/json' } : undefined,
   });
   if (!res.ok) {
+    if (res.status === QUOTA_STATUS) {
+      reportQuotaExceeded(await res.text().catch(() => ''));
+      throw new ApiError('лимит бесплатного тарифа: не больше 3 чатов в месяц', res.status);
+    }
     const hint =
       res.status === 401 || res.status === 403
         ? 'неверный idInstance или apiTokenInstance'

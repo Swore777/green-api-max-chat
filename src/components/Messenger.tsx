@@ -21,6 +21,7 @@ export function chatTitle(chat: Chat): string {
 }
 
 const BASE_TITLE = document.title;
+const AVATARS_TO_LOAD = 20;
 
 export function Messenger({ creds, onLogout }: Props) {
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -28,7 +29,7 @@ export function Messenger({ creds, onLogout }: Props) {
   // звук — только на то, чего человек сейчас не видит
   const seenRef = useRef({ activeId, visible });
   seenRef.current = { activeId, visible };
-  const { chats, connection, problems, fixSettings, openChat, send, loadHistory, markRead, typing } = useChats(creds, (m) => {
+  const { chats, connection, problems, quota, fixSettings, openChat, send, loadHistory, markRead, typing } = useChats(creds, (m) => {
     const { activeId, visible } = seenRef.current;
     if (!visible || m.chatId !== activeId) playPing();
   });
@@ -54,7 +55,9 @@ export function Messenger({ creds, onLogout }: Props) {
   const active = activeId ? chats[activeId] : undefined;
   const avatars = useAvatars(
     creds,
-    useMemo(() => list.map((c) => c.chatId), [list]),
+    // каждый запрос по чужому чату может съесть квоту бесплатного тарифа (3 чата),
+    // поэтому фото — только для чатов с перепиской
+    useMemo(() => list.filter((c) => c.messages.length > 0).slice(0, AVATARS_TO_LOAD).map((c) => c.chatId), [list]),
   );
 
   useEffect(() => {
@@ -125,6 +128,14 @@ export function Messenger({ creds, onLogout }: Props) {
         )}
 
         {problems.length > 0 && <SettingsBanner problems={problems} onFix={fixSettings} />}
+
+        {quota && (
+          <div className="banner warn">
+            <b>Исчерпан лимит бесплатного тарифа GREEN-API.</b> На тарифе «Разработчик» переписка возможна только с
+            3 чатами в месяц, сообщения остальных не доходят даже до кабинета.
+            {quota.length > 0 && <span>Разрешены: {quota.map((id) => chatTitle({ chatId: id, messages: [] })).join(', ')}.</span>}
+          </div>
+        )}
 
         {connection === 'reconnecting' && <div className="banner">Нет связи с GREEN-API, переподключаемся…</div>}
 

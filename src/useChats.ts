@@ -6,6 +6,7 @@ import {
   getChatHistory,
   getChats,
   getSettings,
+  onQuotaExceeded,
   readChat,
   receiveNotification,
   sendMessage,
@@ -194,6 +195,7 @@ export function useChats(creds: Credentials, onIncoming?: (m: ChatMessage) => vo
           setConnection('online');
           if (!n) continue;
           console.debug('notification:', n.body.typeWebhook, n.body);
+          if (n.body.typeWebhook === 'quotaExceeded') setQuota((q) => q ?? []);
           const message = messageFromNotification(n.body);
           if (message) {
             dispatch({ type: 'upsert', message, countUnread: true });
@@ -215,6 +217,9 @@ export function useChats(creds: Credentials, onIncoming?: (m: ChatMessage) => vo
   }, [creds]);
 
   const [problems, setProblems] = useState<string[]>([]);
+  /** null — квота в порядке; массив — разрешённые чаты (может быть пустым, если API их не назвал) */
+  const [quota, setQuota] = useState<string[] | null>(null);
+  useEffect(() => onQuotaExceeded((allowed) => setQuota((q) => (allowed.length ? allowed : (q ?? [])))), []);
   const checkSettings = useCallback(async () => {
     try {
       setProblems(settingsProblems(await getSettings(credsRef.current)));
@@ -322,5 +327,5 @@ export function useChats(creds: Credentials, onIncoming?: (m: ChatMessage) => vo
     sendTyping(credsRef.current, chatId, TYPING_MS).catch((e) => console.warn('sendTyping:', e));
   }, []);
 
-  return { chats, connection, problems, fixSettings, openChat, send, loadHistory, markRead, typing };
+  return { chats, connection, problems, quota, fixSettings, openChat, send, loadHistory, markRead, typing };
 }

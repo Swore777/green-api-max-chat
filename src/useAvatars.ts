@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { getAvatar, type Credentials } from './api';
+import { ApiError, getAvatar, type Credentials } from './api';
 
 // Ссылки на CDN мессенджера подписаны и со временем протухают
 const TTL_MS = 24 * 60 * 60 * 1000;
@@ -60,6 +60,8 @@ export function useAvatars(creds: Credentials, chatIds: string[]): Record<string
         } catch (e) {
           // метода нет у мессенджера или лимит — остаёмся на букве до перезагрузки
           console.warn('getAvatar:', e);
+          // квота бесплатного тарифа: дальше не тратим ни запросы, ни чаты
+          if (e instanceof ApiError && e.status === 466) return;
         }
         await new Promise((r) => setTimeout(r, PAUSE_MS));
       }
