@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { NotificationBody } from './api';
-import { formatPhone, messageFromHistory, messageFromNotification, normalizePhone } from './notifications';
-import { reducer, type State } from './useChats';
+import {
+  formatPhone,
+  laterStatus,
+  messageFromHistory,
+  messageFromNotification,
+  normalizePhone,
+  statusFromNotification,
+} from './notifications';
+import { reducer, settingsProblems, type State } from './useChats';
 
 const incoming: NotificationBody = {
   typeWebhook: 'incomingMessageReceived',
@@ -125,5 +132,58 @@ describe('reducer', () => {
     const m = messageFromNotification(incoming)!;
     const s = reducer({}, { type: 'upsert', message: m });
     expect(s['10000000'].name).toBe('Анна');
+  });
+});
+
+describe('статусы доставки', () => {
+  it('не откатывает «прочитано» к «доставлено»', () => {
+    expect(laterStatus('read', 'delivered')).toBe('read');
+    expect(laterStatus('sent', 'read')).toBe('read');
+    expect(laterStatus('delivered', 'error')).toBe('error');
+  });
+
+  it('разбирает outgoingMessageStatus', () => {
+    expect(
+      statusFromNotification({ typeWebhook: 'outgoingMessageStatus', chatId: '7999@c.us', idMessage: 'm1', status: 'read' }),
+    ).toEqual({ chatId: '7999@c.us', id: 'm1', status: 'read' });
+    expect(
+      statusFromNotification({ typeWebhook: 'outgoingMessageStatus', chatId: '7999@c.us', idMessage: 'm1', status: 'noAccount' }),
+    ).toMatchObject({ status: 'error' });
+  });
+
+  it('статус из журнала обновляет уже показанное сообщение', () => {
+    const sent = { id: 'm1', chatId: 'c', text: 'x', timestamp: 1, outgoing: true, status: 'sent' as const };
+    let s: State = reducer({}, { type: 'upsert', message: sent });
+    s = reducer(s, { type: 'upsertMany', chatId: 'c', messages: [{ ...sent, status: 'read' }] });
+    expect(s.c.messages).toHaveLength(1);
+    expect(s.c.messages[0].status).toBe('read');
+  });
+});
+
+describe('непрочитанные', () => {
+  it('считаются только для новых входящих из очереди', () => {
+    const m = messageFromNotification(incoming)!;
+    let s: State = reducer({}, { type: 'upsertMany', chatId: m.chatId, messages: [m] });
+    expect(s[m.chatId].unread ?? 0).toBe(0);
+    s = reducer(s, { type: 'upsert', message: { ...m, id: 'in-2' }, countUnread: true });
+    expect(s[m.chatId].unread).toBe(1);
+    s = reducer(s, { type: 'read', chatId: m.chatId });
+    expect(s[m.chatId].unread).toBe(0);
+  });
+});
+
+describe('settingsProblems', () => {
+  it('находит webhook и выключенные входящие', () => {
+    expect(settingsProblems({ webhookUrl: 'https://x', incomingWebhook: 'no' })).toHaveLength(2);
+    expect(
+      settingsProblems({
+        webhookUrl: '',
+        incomingWebhook: 'yes',
+        outgoingWebhook: 'yes',
+        outgoingMessageWebhook: 'yes',
+        outgoingAPIMessageWebhook: 'yes',
+        enableMessagesHistory: 'yes',
+      }),
+    ).toEqual([]);
   });
 });
