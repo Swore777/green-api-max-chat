@@ -24,7 +24,23 @@ const BASE_TITLE = document.title;
 const AVATARS_TO_LOAD = 20;
 
 export function Messenger({ creds, onLogout }: Props) {
-  const [activeId, setActiveId] = useState<string | null>(null);
+  // открытый чат переживает перезагрузку страницы, как в web.max.ru
+  const activeKey = `max-chat:active:${creds.idInstance}`;
+  const [activeId, setActiveId] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(activeKey);
+    } catch {
+      return null;
+    }
+  });
+  useEffect(() => {
+    try {
+      if (activeId) localStorage.setItem(activeKey, activeId);
+      else localStorage.removeItem(activeKey);
+    } catch {
+      // не запомним — не страшно
+    }
+  }, [activeId, activeKey]);
   const visible = usePageVisible();
   // звук — только на то, чего человек сейчас не видит
   const seenRef = useRef({ activeId, visible });

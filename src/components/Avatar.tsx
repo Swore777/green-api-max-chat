@@ -1,13 +1,12 @@
 import { useState } from 'react';
 
-// Оттенки фирменного зелёного GREEN-API; цвет стабилен для одного собеседника
+// Градиенты аватаров web.max.ru (malachite, dark-sky, tangerine, orchid);
+// фиолетовый lilac из их набора убран. Цвет стабилен для одного собеседника.
 const GRADIENTS = [
-  ['#3b9702', '#55b31c'],
-  ['#2e7d32', '#4caf50'],
-  ['#1f8a70', '#34b38a'],
-  ['#5c8a00', '#8bc34a'],
-  ['#0f766e', '#14a38f'],
-  ['#4d7c0f', '#6fae2b'],
+  ['#1bd6e3', '#27a5c8'],
+  ['#79bcff', '#4289ed'],
+  ['#ffb381', '#e5782d'],
+  ['#fa82ba', '#e74aa6'],
 ];
 
 function hash(s: string): number {

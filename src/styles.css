@@ -1,35 +1,49 @@
 :root {
-  --bg: #f1f2f6;
+  /* Палитра web.max.ru, тема «space» (значения взяты из CSS-переменных MAX) */
+  --bg: #edeef2;
   --panel: #ffffff;
-  --panel-2: #f7f8fa;
-  --border: #e6e8ee;
-  --text: #16181d;
-  --muted: #7c8291;
-  /* фирменный зелёный GREEN-API (из логотипа) */
-  --accent: #3b9702;
-  --hover: #f0f2f7;
-  --active: #e7f4dd;
+  --panel-2: #f5f7fa;
+  --border: #0c0d0e0f;
+  --text: #060708;
+  --muted: #06070885;
+  --accent: #007aff;
+  --accent-text: #ffffff;
+  --hover: #0c0d0e0a;
+  --active: #007aff1f;
   --bubble-in: #ffffff;
-  --bubble-out: linear-gradient(135deg, #3b9702, #55b31c);
-  --danger: #e5484d;
-  --chat-bg: #e8efe2;
-  --pattern: rgb(59 151 2 / 0.12);
+  --bubble-in-text: #060708;
+  --bubble-out: #e9fdff;
+  --bubble-out-text: #011c29;
+  --bubble-out-meta: #0784b8;
+  --read: #0f8ec2;
+  --danger: #ff303c;
+  --chat-bg: linear-gradient(160deg, #99d5d7, #80bcff);
+  --pattern: #ffffff38;
+  --day-bg: #ffffffb8;
+  --day-text: #060708ad;
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0e0f13;
-    --panel: #17181d;
-    --panel-2: #1d1f25;
-    --border: #2a2c33;
-    --text: #eceef3;
-    --muted: #8b90a0;
-    --hover: #22242b;
-    --active: #1f3016;
-    --bubble-in: #24262d;
-    --chat-bg: #0f120d;
-    --pattern: rgb(85 179 28 / 0.08);
+    --bg: #0f0f12;
+    --panel: #17181c;
+    --panel-2: #25262d;
+    --border: #ffffff0f;
+    --text: #ffffff;
+    --muted: #ffffffa3;
+    --hover: #ffffff0d;
+    --active: #007aff33;
+    --bubble-in: #232e3a;
+    --bubble-in-text: #ffffff;
+    --bubble-out: #6965e5;
+    --bubble-out-text: #ffffff;
+    --bubble-out-meta: #ffffffa3;
+    --read: #ffffffe0;
+    --chat-bg: #141414;
+    --pattern: #505bc74d;
+    --day-bg: #ffffff1f;
+    --day-text: #ffffffcc;
     color-scheme: dark;
   }
 }
@@ -48,7 +62,8 @@ body,
 body {
   background: var(--bg);
   color: var(--text);
-  font: 15px/1.4 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  /* шрифт как у web.max.ru */
+  font: 15px/1.4 -apple-system, BlinkMacSystemFont, 'Roboto', system-ui, Avenir, Helvetica, Arial, sans-serif;
 }
 
 button,
@@ -84,8 +99,8 @@ button:disabled {
   border: 0;
   border-radius: 12px;
   padding: 10px 16px;
-  background: var(--bubble-out);
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-text);
   font-weight: 600;
 }
 
@@ -128,6 +143,8 @@ textarea:focus {
   display: grid;
   place-items: center;
   padding: 16px;
+  /* те же обои, что в чате MAX */
+  background: radial-gradient(var(--pattern) 1.2px, transparent 1.6px) 0 0 / 24px 24px, var(--chat-bg);
 }
 
 .login-card {
@@ -179,10 +196,31 @@ textarea:focus {
   margin-bottom: 8px;
 }
 
-.login-logo {
+.login-mark {
   align-self: center;
-  width: 180px;
-  height: auto;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #00b8ff, #007aff);
+  color: #fff;
+  box-shadow: 0 8px 24px #007aff40;
+}
+
+.powered {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.powered img {
+  height: 18px;
+  width: auto;
 }
 
 /* ---------- мессенджер ---------- */
@@ -383,10 +421,8 @@ img.avatar {
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  background-color: var(--chat-bg);
-  /* лёгкий узор из точек, как обои в мессенджерах */
-  background-image: radial-gradient(var(--pattern) 1px, transparent 1.2px);
-  background-size: 22px 22px;
+  /* обои MAX: бирюзово-голубой градиент с лёгким узором */
+  background: radial-gradient(var(--pattern) 1.2px, transparent 1.6px) 0 0 / 24px 24px, var(--chat-bg);
 }
 
 .placeholder {
@@ -484,6 +520,7 @@ img.avatar {
 .bubble.in {
   align-self: flex-start;
   background: var(--bubble-in);
+  color: var(--bubble-in-text);
   border-top-left-radius: 6px;
   border-bottom-left-radius: 6px;
 }
@@ -499,7 +536,7 @@ img.avatar {
 .bubble.out {
   align-self: flex-end;
   background: var(--bubble-out);
-  color: #fff;
+  color: var(--bubble-out-text);
   border-top-right-radius: 6px;
   border-bottom-right-radius: 6px;
 }
@@ -542,9 +579,26 @@ img.avatar {
   color: currentColor;
 }
 
-.bubble.out .ticks.read {
-  color: #d9ffb8;
+.bubble.out .meta {
+  color: var(--bubble-out-meta);
   opacity: 1;
+}
+
+.bubble.out .ticks {
+  opacity: 0.55;
+}
+
+.bubble.out .ticks.read {
+  color: var(--read);
+  opacity: 1;
+}
+
+.bubble.error {
+  color: #fff;
+}
+
+.bubble.error .meta {
+  color: inherit;
 }
 
 .chat-item-preview .ticks {
@@ -584,8 +638,8 @@ img.avatar {
   display: inline-block;
   padding: 3px 10px;
   border-radius: 10px;
-  background: rgb(0 0 0 / 0.28);
-  color: #fff;
+  background: var(--day-bg);
+  color: var(--day-text);
   font-size: 12px;
   font-weight: 500;
   backdrop-filter: blur(6px);
@@ -613,8 +667,8 @@ img.avatar {
   height: 42px;
   border: 0;
   border-radius: 50%;
-  background: var(--bubble-out);
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-text);
   display: grid;
   place-items: center;
   transition: transform 0.12s;

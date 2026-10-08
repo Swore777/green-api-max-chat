@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { getStateInstance, type Credentials } from '../api';
+import { IconChats } from './icons';
 
 const DEFAULT_API_URL = 'https://api.green-api.com';
 
@@ -17,7 +18,7 @@ interface Props {
 export function Login({ onLogin }: Props) {
   const [idInstance, setIdInstance] = useState('');
   const [apiTokenInstance, setToken] = useState('');
-  const [apiUrl, setApiUrl] = useState(DEFAULT_API_URL);
+  const [apiUrl, setApiUrl] = useState('');
   const [remember, setRemember] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -49,7 +50,9 @@ export function Login({ onLogin }: Props) {
   return (
     <div className="login">
       <form className="login-card" onSubmit={submit}>
-        <img className="login-logo" src={`${import.meta.env.BASE_URL}green-api-logo.svg`} alt="GREEN-API" />
+        <span className="login-mark" aria-hidden>
+          <IconChats size={34} />
+        </span>
         <h1>Вход в чат</h1>
         <p className="muted">Учётные данные инстанса MAX, Telegram или WhatsApp из личного кабинета GREEN-API</p>
 
@@ -78,7 +81,13 @@ export function Login({ onLogin }: Props) {
           <summary>Дополнительно</summary>
           <label>
             apiUrl
-            <input value={apiUrl} onChange={(e) => setApiUrl(e.target.value)} />
+            <input
+              value={apiUrl}
+              onChange={(e) => setApiUrl(e.target.value)}
+              placeholder={DEFAULT_API_URL}
+              inputMode="url"
+              autoComplete="off"
+            />
           </label>
           <p className="muted small">Возьмите из кабинета, если там указан адрес вида https://3100.api.green-api.com</p>
         </details>
@@ -92,6 +101,9 @@ export function Login({ onLogin }: Props) {
         <button className="primary" disabled={busy}>
           {busy ? 'Проверяем…' : 'Войти'}
         </button>
+        <a className="powered" href="https://green-api.com/" target="_blank" rel="noreferrer">
+          через <img src={`${import.meta.env.BASE_URL}green-api-logo.svg`} alt="GREEN-API" />
+        </a>
       </form>
     </div>
   );
