@@ -5,12 +5,12 @@
   --border: #e6e8ee;
   --text: #16181d;
   --muted: #7c8291;
-  --accent: #4f6bff;
-  --accent-2: #7a5cff;
+  /* фирменный зелёный GREEN-API (из логотипа) */
+  --accent: #3b9702;
   --hover: #f0f2f7;
-  --active: #e8ecff;
+  --active: #e7f4dd;
   --bubble-in: #ffffff;
-  --bubble-out: linear-gradient(135deg, #4f6bff, #7a5cff);
+  --bubble-out: linear-gradient(135deg, #3b9702, #55b31c);
   --danger: #e5484d;
   --chat-bg: #e9ecf3;
   color-scheme: light;
@@ -25,7 +25,7 @@
     --text: #eceef3;
     --muted: #8b90a0;
     --hover: #22242b;
-    --active: #262b45;
+    --active: #1f3016;
     --bubble-in: #24262d;
     --chat-bg: #101116;
     color-scheme: dark;
