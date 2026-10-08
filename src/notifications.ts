@@ -7,9 +7,44 @@ export interface ChatMessage {
   /** unix-время в секундах */
   timestamp: number;
   outgoing: boolean;
-  /** только для входящих: имя из профиля MAX */
+  /** только для входящих: имя из профиля собеседника */
   senderName?: string;
-  status?: 'sending' | 'sent' | 'error';
+  status?: DeliveryStatus;
+}
+
+export type DeliveryStatus = 'sending' | 'sent' | 'delivered' | 'read' | 'error';
+
+// Статусы приходят по порядку не всегда: «прочитано» не должно откатиться к «доставлено»
+const STATUS_RANK: Record<DeliveryStatus, number> = { error: 0, sending: 1, sent: 2, delivered: 3, read: 4 };
+
+export function laterStatus(current: DeliveryStatus | undefined, next: DeliveryStatus): DeliveryStatus {
+  if (!current || next === 'error') return next;
+  return STATUS_RANK[next] > STATUS_RANK[current] ? next : current;
+}
+
+/** Статус мессенджера → наш; неизвестное (yellowCard и т. п.) — null. */
+export function toDeliveryStatus(raw: string | undefined): DeliveryStatus | null {
+  switch (raw) {
+    case 'sent':
+    case 'delivered':
+    case 'read':
+      return raw;
+    case 'failed':
+    case 'noAccount':
+    case 'notInGroup':
+      return 'error';
+    default:
+      return null;
+  }
+}
+
+/** Уведомление outgoingMessageStatus → что и где обновить. */
+export function statusFromNotification(
+  body: NotificationBody,
+): { chatId: string; id: string; status: DeliveryStatus } | null {
+  if (body.typeWebhook !== 'outgoingMessageStatus' || !body.idMessage || !body.chatId) return null;
+  const status = toDeliveryStatus(body.status);
+  return status ? { chatId: body.chatId, id: body.idMessage, status } : null;
 }
 
 // Отправленные из этого интерфейса сообщения тоже приходят в очередь
@@ -56,7 +91,7 @@ export function messageFromHistory(item: HistoryItem): ChatMessage | null {
     timestamp: item.timestamp,
     outgoing,
     senderName: outgoing ? undefined : item.senderName,
-    status: outgoing ? 'sent' : undefined,
+    status: outgoing ? (toDeliveryStatus(item.statusMessage) ?? 'sent') : undefined,
   };
 }
 

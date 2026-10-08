@@ -91,10 +91,39 @@ export function getAvatar(c: Credentials, chatId: string): Promise<AvatarResult 
   });
 }
 
+export type InstanceSettings = Record<string, string | number | undefined> & {
+  webhookUrl?: string;
+};
+
+export function getSettings(c: Credentials): Promise<InstanceSettings> {
+  return call(methodUrl(c, 'getSettings'));
+}
+
+export function setSettings(c: Credentials, settings: InstanceSettings): Promise<unknown> {
+  return call(methodUrl(c, 'setSettings'), { method: 'POST', body: JSON.stringify(settings) });
+}
+
+/** Собеседник видит «печатает…» typingTime мс. */
+export function sendTyping(c: Credentials, chatId: string, typingTime: number): Promise<unknown> {
+  return call(methodUrl(c, 'sendTyping'), {
+    method: 'POST',
+    body: JSON.stringify({ chatId, typingTime }),
+  });
+}
+
+/** Отметить чат прочитанным — у собеседника загорятся галочки «прочитано». */
+export function readChat(c: Credentials, chatId: string): Promise<unknown> {
+  return call(methodUrl(c, 'readChat'), {
+    method: 'POST',
+    body: JSON.stringify({ chatId }),
+  });
+}
+
 export interface RemoteChat {
   id: string;
   name?: string;
   type?: 'user' | 'group' | string;
+  unreadCount?: number;
 }
 
 /** Последние чаты аккаунта, отсортированы по активности. */
@@ -111,6 +140,7 @@ export interface HistoryItem {
   textMessage?: string;
   extendedTextMessage?: { text?: string };
   senderName?: string;
+  statusMessage?: string;
 }
 
 /** История чата, от новых к старым. */
@@ -129,6 +159,9 @@ export interface Notification {
 export interface NotificationBody {
   typeWebhook: string;
   idMessage?: string;
+  /** только у outgoingMessageStatus */
+  chatId?: string;
+  status?: string;
   timestamp?: number;
   senderData?: {
     chatId: string;
