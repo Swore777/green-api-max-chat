@@ -1,4 +1,4 @@
-import type { NotificationBody } from './api';
+import type { HistoryItem, NotificationBody } from './api';
 
 export interface ChatMessage {
   id: string;
@@ -38,6 +38,25 @@ export function messageFromNotification(body: NotificationBody): ChatMessage | n
     outgoing: !incoming,
     senderName: incoming ? body.senderData.senderName || body.senderData.chatName : undefined,
     status: incoming ? undefined : 'sent',
+  };
+}
+
+const TEXT_TYPES = new Set(['textMessage', 'extendedTextMessage', 'quotedMessage']);
+
+/** Сообщение из журнала getChatHistory; не текст — null. */
+export function messageFromHistory(item: HistoryItem): ChatMessage | null {
+  if (!TEXT_TYPES.has(item.typeMessage)) return null;
+  const text = item.textMessage ?? item.extendedTextMessage?.text;
+  if (text === undefined) return null;
+  const outgoing = item.type === 'outgoing';
+  return {
+    id: item.idMessage,
+    chatId: item.chatId,
+    text,
+    timestamp: item.timestamp,
+    outgoing,
+    senderName: outgoing ? undefined : item.senderName,
+    status: outgoing ? 'sent' : undefined,
   };
 }
 

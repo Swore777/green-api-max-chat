@@ -3,18 +3,22 @@ import {
   ApiError,
   checkAccount,
   deleteNotification,
+  getChatHistory,
+  getChats,
   receiveNotification,
   sendMessage,
   type Credentials,
 } from './api';
-import { messageFromNotification, normalizePhone, type ChatMessage } from './notifications';
+import { messageFromHistory, messageFromNotification, normalizePhone, type ChatMessage } from './notifications';
 
 export interface Chat {
   chatId: string;
   /** номер, по которому чат создан вручную */
   phone?: string;
-  /** имя из профиля MAX, если собеседник уже писал */
+  /** имя контакта или группы: из списка чатов или профиля собеседника */
   name?: string;
+  /** когда чат создан здесь вручную (сек) — чтобы пустой новый чат был сверху */
+  createdAt?: number;
   messages: ChatMessage[];
 }
 
@@ -22,8 +26,22 @@ export type State = Record<string, Chat>;
 
 export type Action =
   | { type: 'open'; chatId: string; phone?: string }
+  | { type: 'chats'; chats: { chatId: string; name?: string }[] }
   | { type: 'upsert'; message: ChatMessage }
+  | { type: 'upsertMany'; chatId: string; messages: ChatMessage[] }
   | { type: 'status'; chatId: string; id: string; status: ChatMessage['status']; newId?: string };
+
+function addMessages(state: State, chatId: string, incoming: ChatMessage[]): State {
+  const chat = state[chatId] ?? { chatId, messages: [] };
+  // отправленное отсюда сообщение уже есть в чате — эхо из очереди или журнала не дублируем
+  const known = new Set(chat.messages.map((m) => m.id));
+  const fresh = incoming.filter((m) => !known.has(m.id));
+  if (fresh.length === 0) return state;
+  const messages = [...chat.messages, ...fresh].sort((a, b) => a.timestamp - b.timestamp);
+  // в группе senderName — имя участника, а не чата, поэтому имя из списка чатов важнее
+  const name = chat.name ?? fresh.find((m) => m.senderName)?.senderName;
+  return { ...state, [chatId]: { ...chat, name, messages } };
+}
 
 export function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -32,20 +50,24 @@ export function reducer(state: State, action: Action): State {
       if (chat && (chat.phone || !action.phone)) return state;
       return {
         ...state,
-        [action.chatId]: { ...(chat ?? { chatId: action.chatId, messages: [] }), phone: action.phone },
+        [action.chatId]: {
+          ...(chat ?? { chatId: action.chatId, messages: [], createdAt: Math.floor(Date.now() / 1000) }),
+          phone: action.phone,
+        },
       };
     }
-    case 'upsert': {
-      const m = action.message;
-      const chat = state[m.chatId] ?? { chatId: m.chatId, messages: [] };
-      // отправленное отсюда сообщение уже есть в чате — эхо из очереди не дублируем
-      if (chat.messages.some((x) => x.id === m.id)) return state;
-      const messages = [...chat.messages, m].sort((a, b) => a.timestamp - b.timestamp);
-      return {
-        ...state,
-        [m.chatId]: { ...chat, name: m.senderName ?? chat.name, messages },
-      };
+    case 'chats': {
+      const next = { ...state };
+      for (const { chatId, name } of action.chats) {
+        const chat = next[chatId];
+        next[chatId] = chat ? { ...chat, name: name || chat.name } : { chatId, name, messages: [] };
+      }
+      return next;
     }
+    case 'upsert':
+      return addMessages(state, action.message.chatId, [action.message]);
+    case 'upsertMany':
+      return addMessages(state, action.chatId, action.messages);
     case 'status': {
       const chat = state[action.chatId];
       if (!chat) return state;
@@ -78,6 +100,8 @@ export type Connection = 'online' | 'reconnecting';
 // Long-poll: сервер держит запрос до 20 с, пока не появится уведомление
 const RECEIVE_TIMEOUT_SEC = 20;
 const RETRY_DELAY_MS = 3000;
+const CHATS_TO_LOAD = 50;
+const HISTORY_TO_LOAD = 50;
 
 export function useChats(creds: Credentials) {
   const [chats, dispatch] = useReducer(reducer, creds, loadChats);
@@ -120,6 +144,37 @@ export function useChats(creds: Credentials) {
 
     return () => abort.abort();
   }, [creds]);
+
+  // Существующие чаты аккаунта. Не у всех мессенджеров есть метод —
+  // тогда список просто собирается из новых сообщений, как раньше.
+  useEffect(() => {
+    let cancelled = false;
+    getChats(creds, CHATS_TO_LOAD)
+      .then((list) => {
+        if (cancelled || !Array.isArray(list)) return;
+        dispatch({ type: 'chats', chats: list.map((c) => ({ chatId: c.id, name: c.name })) });
+      })
+      .catch((e) => console.warn('getChats:', e));
+    return () => {
+      cancelled = true;
+    };
+  }, [creds]);
+
+  // История подгружается один раз за сессию на чат — при первом открытии
+  const historyLoaded = useRef(new Set<string>());
+  const loadHistory = useCallback(async (chatId: string) => {
+    if (historyLoaded.current.has(chatId)) return;
+    historyLoaded.current.add(chatId);
+    try {
+      const items = await getChatHistory(credsRef.current, chatId, HISTORY_TO_LOAD);
+      if (!Array.isArray(items)) return;
+      const messages = items.map(messageFromHistory).filter((m): m is ChatMessage => m !== null);
+      dispatch({ type: 'upsertMany', chatId, messages });
+    } catch (e) {
+      historyLoaded.current.delete(chatId); // дать шанс при следующем открытии
+      console.warn('getChatHistory:', e);
+    }
+  }, []);
 
   /** Создаёт чат по номеру. Возвращает chatId или бросает понятную ошибку. */
   const openChat = useCallback(async (phoneInput: string): Promise<string> => {
@@ -166,5 +221,5 @@ export function useChats(creds: Credentials) {
     }
   }, []);
 
-  return { chats, connection, openChat, send };
+  return { chats, connection, openChat, send, loadHistory };
 }

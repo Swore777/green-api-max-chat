@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import type { Credentials } from '../api';
 import { formatPhone } from '../notifications';
 import { useChats, type Chat } from '../useChats';
@@ -13,20 +13,26 @@ interface Props {
 export function chatTitle(chat: Chat): string {
   if (chat.name) return chat.name;
   if (chat.phone) return formatPhone(chat.phone);
-  return chat.chatId.replace(/@c\.us$/, '');
+  const id = chat.chatId.replace(/@.*$/, '');
+  return chat.chatId.endsWith('@c.us') ? formatPhone(id) : id;
 }
 
 export function Messenger({ creds, onLogout }: Props) {
-  const { chats, connection, openChat, send } = useChats(creds);
+  const { chats, connection, openChat, send, loadHistory } = useChats(creds);
   const [activeId, setActiveId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (activeId) loadHistory(activeId);
+  }, [activeId, loadHistory]);
   const [creating, setCreating] = useState(false);
   const [phone, setPhone] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // свежие сверху; только что созданный пустой чат — самый верх
+  // свежие сверху; созданный здесь пустой чат — по времени создания,
+  // подгруженные без истории — ниже, в порядке активности от GREEN-API
   const list = useMemo(() => {
-    const lastAt = (c: Chat) => c.messages.at(-1)?.timestamp ?? Number.MAX_SAFE_INTEGER;
+    const lastAt = (c: Chat) => c.messages.at(-1)?.timestamp ?? c.createdAt ?? 0;
     return Object.values(chats).sort((a, b) => lastAt(b) - lastAt(a));
   }, [chats]);
   const active = activeId ? chats[activeId] : undefined;

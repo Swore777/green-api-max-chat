@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { NotificationBody } from './api';
-import { formatPhone, messageFromNotification, normalizePhone } from './notifications';
+import { formatPhone, messageFromHistory, messageFromNotification, normalizePhone } from './notifications';
 import { reducer, type State } from './useChats';
 
 const incoming: NotificationBody = {
@@ -45,6 +45,30 @@ describe('messageFromNotification', () => {
   });
 });
 
+describe('messageFromHistory', () => {
+  const base = {
+    idMessage: 'h-1',
+    timestamp: 1706522263,
+    typeMessage: 'textMessage',
+    chatId: '79876543210@c.us',
+    textMessage: 'Привет',
+  };
+
+  it('разбирает входящее и исходящее', () => {
+    expect(messageFromHistory({ ...base, type: 'incoming', senderName: 'Вася' })).toMatchObject({
+      id: 'h-1',
+      text: 'Привет',
+      outgoing: false,
+      senderName: 'Вася',
+    });
+    expect(messageFromHistory({ ...base, type: 'outgoing' })).toMatchObject({ outgoing: true, status: 'sent' });
+  });
+
+  it('пропускает медиа', () => {
+    expect(messageFromHistory({ ...base, type: 'incoming', typeMessage: 'imageMessage', textMessage: undefined })).toBeNull();
+  });
+});
+
 describe('normalizePhone', () => {
   it.each([
     ['+7 (999) 123-45-67', '79991234567'],
@@ -85,6 +109,16 @@ describe('reducer', () => {
     s = reducer(s, { type: 'upsert', message: { ...draft, id: 'srv-1', status: 'sent' } });
     s = reducer(s, { type: 'status', chatId: '10000000', id: 'local-1', status: 'sent', newId: 'srv-1' });
     expect(s['10000000'].messages.map((m) => m.id)).toEqual(['srv-1']);
+  });
+
+  it('список чатов не затирает сообщения, а история не дублирует их', () => {
+    const m = messageFromNotification(incoming)!;
+    let s: State = reducer({}, { type: 'upsert', message: m });
+    s = reducer(s, { type: 'chats', chats: [{ chatId: '10000000', name: 'Анна П.' }, { chatId: '20000000' }] });
+    s = reducer(s, { type: 'upsertMany', chatId: '10000000', messages: [m, { ...m, id: 'in-0', timestamp: 1 }] });
+    expect(s['10000000'].name).toBe('Анна П.');
+    expect(s['10000000'].messages.map((x) => x.id)).toEqual(['in-0', 'in-1']);
+    expect(s['20000000'].messages).toEqual([]);
   });
 
   it('создаёт чат при входящем от нового собеседника', () => {

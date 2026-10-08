@@ -78,6 +78,36 @@ export async function sendMessage(
   return r.idMessage;
 }
 
+export interface RemoteChat {
+  id: string;
+  name?: string;
+  type?: 'user' | 'group' | string;
+}
+
+/** Последние чаты аккаунта, отсортированы по активности. */
+export function getChats(c: Credentials, count: number): Promise<RemoteChat[] | null> {
+  return call(methodUrl(c, 'getChats', `?count=${count}`));
+}
+
+export interface HistoryItem {
+  type: 'incoming' | 'outgoing';
+  idMessage: string;
+  timestamp: number;
+  typeMessage: string;
+  chatId: string;
+  textMessage?: string;
+  extendedTextMessage?: { text?: string };
+  senderName?: string;
+}
+
+/** История чата, от новых к старым. */
+export function getChatHistory(c: Credentials, chatId: string, count: number): Promise<HistoryItem[] | null> {
+  return call(methodUrl(c, 'getChatHistory'), {
+    method: 'POST',
+    body: JSON.stringify({ chatId, count }),
+  });
+}
+
 export interface Notification {
   receiptId: number;
   body: NotificationBody;
