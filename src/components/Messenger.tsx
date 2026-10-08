@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import type { Credentials } from '../api';
 import { formatPhone } from '../notifications';
+import { useAvatars } from '../useAvatars';
 import { useChats, type Chat } from '../useChats';
 import { Avatar } from './Avatar';
 import { ChatView } from './ChatView';
@@ -36,6 +37,10 @@ export function Messenger({ creds, onLogout }: Props) {
     return Object.values(chats).sort((a, b) => lastAt(b) - lastAt(a));
   }, [chats]);
   const active = activeId ? chats[activeId] : undefined;
+  const avatars = useAvatars(
+    creds,
+    useMemo(() => list.map((c) => c.chatId), [list]),
+  );
 
   const create = async (e: FormEvent) => {
     e.preventDefault();
@@ -97,7 +102,7 @@ export function Messenger({ creds, onLogout }: Props) {
                   className={`chat-item ${chat.chatId === activeId ? 'active' : ''}`}
                   onClick={() => setActiveId(chat.chatId)}
                 >
-                  <Avatar seed={chat.chatId} title={title} />
+                  <Avatar seed={chat.chatId} title={title} src={avatars[chat.chatId]} />
                   <span className="chat-item-body">
                     <span className="chat-item-top">
                       <span className="chat-item-title">{title}</span>
@@ -117,6 +122,7 @@ export function Messenger({ creds, onLogout }: Props) {
       <main className="main">
         {active ? (
           <ChatView
+            avatar={avatars[active.chatId]}
             chat={active}
             title={chatTitle(active)}
             onSend={(text) => send(active.chatId, text)}

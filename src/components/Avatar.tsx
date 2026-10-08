@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 // Оттенки фирменного зелёного GREEN-API; цвет стабилен для одного собеседника
 const GRADIENTS = [
   ['#3b9702', '#55b31c'],
@@ -14,7 +16,20 @@ function hash(s: string): number {
   return Math.abs(h);
 }
 
-export function Avatar({ seed, title }: { seed: string; title: string }) {
+interface Props {
+  seed: string;
+  title: string;
+  /** настоящее фото; если нет или не загрузилось — буква на градиенте */
+  src?: string;
+}
+
+export function Avatar({ seed, title, src }: Props) {
+  const [failed, setFailed] = useState<string | null>(null);
+
+  if (src && failed !== src) {
+    return <img className="avatar" src={src} alt="" referrerPolicy="no-referrer" onError={() => setFailed(src)} />;
+  }
+
   const [a, b] = GRADIENTS[hash(seed) % GRADIENTS.length];
   const letter = /\p{L}/u.test(title[0] ?? '') ? title[0].toUpperCase() : '#';
   return (

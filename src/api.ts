@@ -78,6 +78,19 @@ export async function sendMessage(
   return r.idMessage;
 }
 
+export interface AvatarResult {
+  urlAvatar?: string;
+  available?: boolean;
+  base64Avatar?: string;
+}
+
+export function getAvatar(c: Credentials, chatId: string): Promise<AvatarResult | null> {
+  return call(methodUrl(c, 'getAvatar'), {
+    method: 'POST',
+    body: JSON.stringify({ chatId }),
+  });
+}
+
 export interface RemoteChat {
   id: string;
   name?: string;

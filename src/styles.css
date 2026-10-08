@@ -307,6 +307,11 @@ textarea:focus {
   font-size: 18px;
 }
 
+img.avatar {
+  object-fit: cover;
+  background: var(--hover);
+}
+
 .main {
   display: flex;
   flex-direction: column;

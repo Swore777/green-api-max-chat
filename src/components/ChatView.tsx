@@ -6,13 +6,14 @@ import { Avatar } from './Avatar';
 interface Props {
   chat: Chat;
   title: string;
+  avatar?: string;
   onSend: (text: string) => void;
   onBack: () => void;
 }
 
 const MAX_LENGTH = 4000; // лимит sendMessage
 
-export function ChatView({ chat, title, onSend, onBack }: Props) {
+export function ChatView({ chat, title, avatar, onSend, onBack }: Props) {
   const [draft, setDraft] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -41,7 +42,7 @@ export function ChatView({ chat, title, onSend, onBack }: Props) {
         <button className="icon-btn back" onClick={onBack} title="К списку чатов">
           ←
         </button>
-        <Avatar seed={chat.chatId} title={title} />
+        <Avatar seed={chat.chatId} title={title} src={avatar} />
         <div>
           <div className="chat-title">{title}</div>
           {chat.phone && chat.name && <div className="muted small">{formatPhone(chat.phone)}</div>}
