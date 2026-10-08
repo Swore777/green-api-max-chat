@@ -4,7 +4,7 @@ import { getStateInstance, type Credentials } from '../api';
 const DEFAULT_API_URL = 'https://api.green-api.com';
 
 const STATE_HINTS: Record<string, string> = {
-  notAuthorized: 'Инстанс не авторизован в MAX — войдите по QR-коду в личном кабинете GREEN-API',
+  notAuthorized: 'Инстанс не авторизован — отсканируйте QR-код в личном кабинете GREEN-API',
   blocked: 'Аккаунт заблокирован',
   starting: 'Инстанс запускается, попробуйте через минуту',
   yellowCard: 'Отправка временно ограничена мессенджером',

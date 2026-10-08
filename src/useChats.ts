@@ -128,15 +128,16 @@ export function useChats(creds: Credentials) {
 
     // В MAX ответы приходят от числового id пользователя, а не от номера.
     // Без checkAccount ответ собеседника попал бы в отдельный чат.
-    let chatId: string;
+    // Инстанс WhatsApp метода не знает — тогда пишем по номеру, это его родной chatId.
+    let chatId = `${phone}@c.us`;
     try {
       const r = await checkAccount(credsRef.current, phone);
-      if (!r.exist) throw new Error('На этом номере нет аккаунта MAX');
-      chatId = r.chatId;
+      if (typeof r?.exist === 'boolean') {
+        if (!r.exist) throw new Error('На этом номере нет аккаунта MAX');
+        chatId = r.chatId;
+      }
     } catch (e) {
       if (!(e instanceof ApiError)) throw e;
-      // метод недоступен (например, инстанс другого мессенджера) — пишем по номеру
-      chatId = `${phone}@c.us`;
     }
 
     dispatch({ type: 'open', chatId, phone });
